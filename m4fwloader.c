@@ -6,6 +6,7 @@
  * 
  * Copyright (C) 2015-2016 Giuseppe Pagano <giuseppe.pagano@seco.com>
  * Copyright 2017 NXP
+ * Copyright 2017 Fluke
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -81,7 +82,7 @@
 #define RETURN_CODE_M4START_FAILED 3
 
 struct soc_specific {
-    char* detect_name;
+    const char* detect_name;
 
     uint32_t src_m4reg_addr;
 
@@ -99,30 +100,30 @@ struct soc_specific {
 
 static int verbose = 0;
 
-void regshow(uint32_t addr, char* name, int fd)
+void regshow(uint32_t addr, const char* name, int fd)
 {
-    off_t target;
+    long unsigned target;
     void *map_base, *virt_addr;
 
-    target = (off_t)addr;
-    map_base = mmap(0, MAP_SIZE, PROT_READ, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
-    LogVerbose("%s (0x%08X): 0x%08X\r\n", name, addr, *((unsigned long*)virt_addr));
+    target = addr;
+    map_base = mmap(0, MAP_SIZE, PROT_READ, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
+    LogVerbose("%s (0x%08X): 0x%08lX\r\n", name, addr, *((unsigned long*)virt_addr));
     munmap(map_base, MAP_SIZE);
 }
 
 void imx6sx_clk_enable(int fd)
 {
-    off_t target;
+    unsigned long target;
     unsigned long read_result;
     void *map_base, *virt_addr;
 
     LogVerbose("i.MX6SX specific function for M4 clock enabling!\n");
 
     regshow(IMX6SX_CCM_CCGR3, "CCM_CCGR3", fd);
-    target = (off_t)IMX6SX_CCM_CCGR3; /* M4 Clock gate*/
-    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
+    target = IMX6SX_CCM_CCGR3; /* M4 Clock gate*/
+    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
     read_result = *((unsigned long*)virt_addr);
     *((unsigned long*)virt_addr) = read_result | 0x0000000C;
     munmap(map_base, MAP_SIZE);
@@ -132,19 +133,19 @@ void imx6sx_clk_enable(int fd)
 
 void imx7d_clk_enable(int fd)
 {
-    off_t target;
-    unsigned long read_result;
+    unsigned long target;
+    //unsigned long read_result;
     void *map_base, *virt_addr;
 
     LogVerbose("i.MX7D specific function for M4 clock enabling!\n");
 
     regshow(IMX7D_CCM_ANALOG_PLL_480, "CCM_ANALOG_PLL_480", fd);
     /* Enable parent clock first! */
-    target = (off_t)IMX7D_CCM_ANALOG_PLL_480;
-    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
+    target = IMX7D_CCM_ANALOG_PLL_480;
+    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
     /* clock enabled by clearing the bit!  */
-    *((unsigned long*)virt_addr) = (*((unsigned long*)virt_addr)) & (~(1 << 5));
+    *((unsigned long*)virt_addr) = (*((unsigned long*)virt_addr)) & (unsigned long)(~(1 << 5));
     munmap(map_base, MAP_SIZE);
     regshow(IMX7D_CCM_ANALOG_PLL_480, "CCM_ANALOG_PLL_480", fd);
     LogVerbose("CCM_ANALOG_PLL_480 done\n");
@@ -152,8 +153,8 @@ void imx7d_clk_enable(int fd)
     /* ENABLE CLK */
     regshow(IMX7D_CCM_CCGR1, "CCM1_CCGR1", fd);
     target = (off_t)(IMX7D_CCM_CCGR1+4); /* CCM_CCGR1_SET */
-    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
+    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
     *((unsigned long*)virt_addr) = 0x00000003;
     munmap(map_base, MAP_SIZE);
     regshow(IMX7D_CCM_CCGR1, "CCM1_CCGR1", fd);
@@ -191,15 +192,15 @@ static struct soc_specific socs[] = {
 
 void rpmsg_mu_kick(int fd, int socid, uint32_t vq_id)
 {
-    off_t target;
+    long unsigned target;
     void *map_base, *virt_addr;
 
     if (!socs[socid].rpmsg_mu_kick_addr)
         return;
 
-    target = (off_t)socs[socid].rpmsg_mu_kick_addr;
-    map_base = mmap(0, SIZE_4BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
+    target = socs[socid].rpmsg_mu_kick_addr;
+    map_base = mmap(0, SIZE_4BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
     vq_id = (vq_id << 16);
     *((unsigned long*)virt_addr) = vq_id;
     munmap(map_base, SIZE_4BYTE);
@@ -213,16 +214,16 @@ void ungate_m4_clk(int fd, int socid)
 void stop_cpu(int fd, int socid)
 {
     unsigned long read_result;
-    off_t target;
+    unsigned long target;
     void *map_base, *virt_addr;
 
     if (!socs[socid].src_m4reg_addr)
         return;
 
     regshow(socs[socid].src_m4reg_addr, "STOP - before", fd);
-    target = (off_t)socs[socid].src_m4reg_addr;
-    map_base = mmap(0, SIZE_4BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
+    target = socs[socid].src_m4reg_addr;
+    map_base = mmap(0, SIZE_4BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
     read_result = *((unsigned long*)virt_addr);
     *((unsigned long*)virt_addr) = (read_result & (socs[socid].stop_and)) | socs[socid].stop_or;
     munmap(virt_addr, SIZE_4BYTE);
@@ -232,16 +233,16 @@ void stop_cpu(int fd, int socid)
 void start_cpu(int fd, int socid)
 {
     unsigned long read_result;
-    off_t target;
+    unsigned long target;
     void *map_base, *virt_addr;
 
     if (!socs[socid].src_m4reg_addr)
         return;
 
     regshow(socs[socid].src_m4reg_addr, "START - before", fd);
-    target = (off_t)socs[socid].src_m4reg_addr;
-    map_base = mmap(0, SIZE_4BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
+    target = socs[socid].src_m4reg_addr;
+    map_base = mmap(0, SIZE_4BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
     read_result = *((unsigned long*)virt_addr);
     *((unsigned long*)virt_addr) = (read_result & (socs[socid].start_and)) | socs[socid].start_or;
     munmap(virt_addr, SIZE_4BYTE);
@@ -250,23 +251,23 @@ void start_cpu(int fd, int socid)
 
 void set_stack_pc(int fd, int socid, unsigned int stack, unsigned int pc)
 {
-    off_t target = (off_t)socs[socid].stack_pc_addr;
-    unsigned long read_result;
+    long unsigned target = socs[socid].stack_pc_addr;
+    //unsigned long read_result;
     void *map_base, *virt_addr;
-    map_base = mmap(0, SIZE_16BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, target & ~MAP_MASK);
-    virt_addr = (unsigned char*)(map_base + (target & MAP_MASK));
+    map_base = mmap(0, SIZE_16BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
+    virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
     *((unsigned long*)virt_addr) = stack;
-    virt_addr = (unsigned char*)(map_base + ((target + 0x4) & MAP_MASK));
+    virt_addr = (unsigned char*)map_base + ((target + 0x4) & MAP_MASK);
     *((unsigned long*)virt_addr) = pc;
     munmap(map_base, SIZE_16BYTE);
 }
 
 int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
 {
-    int n;
-    int size;
+    //int n;
+    long size;
     FILE* fdf;
-    off_t target;
+    //off_t target;
     char* filebuffer;
     void *map_base, *virt_addr;
     unsigned long stack, pc;
@@ -276,29 +277,29 @@ int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
     size = ftell(fdf);
     fseek(fdf, 0, SEEK_SET);
     if (size > MAX_FILE_SIZE) {
-        LogError("%s - File size too big, can't load: %d > %d \n", NAME_OF_UTILITY, size, MAX_FILE_SIZE);
+        LogError("%s - File size too big, can't load: %ld > %d \n", NAME_OF_UTILITY, size, MAX_FILE_SIZE);
         return -2;
     }
-    filebuffer = (char*)malloc(size + 1);
-    if (size != fread(filebuffer, sizeof(char), size, fdf)) {
+    filebuffer = (char*)malloc((size_t)size + 1);
+    if ((size_t)size != fread(filebuffer, sizeof(char), (size_t)size, fdf)) {
         free(filebuffer);
         return -2;
     }
 
     fclose(fdf);
 
-    stack = (filebuffer[0] | (filebuffer[1] << 8) | (filebuffer[2] << 16) | (filebuffer[3] << 24));
-    pc = (filebuffer[4] | (filebuffer[5] << 8) | (filebuffer[6] << 16) | (filebuffer[7] << 24));
+    stack = (long unsigned)(filebuffer[0] | (filebuffer[1] << 8) | (filebuffer[2] << 16) | (filebuffer[3] << 24));
+    pc = (long unsigned)(filebuffer[4] | (filebuffer[5] << 8) | (filebuffer[6] << 16) | (filebuffer[7] << 24));
 
     if (loadaddr == 0x0) {
         loadaddr = pc & 0xFFFF0000; /* Align */
     }
     LogVerbose("%s - FILENAME = %s; loadaddr = 0x%08x\n", NAME_OF_UTILITY, filepath, loadaddr);
 
-    map_base = mmap(0, MAP_OCRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, loadaddr & ~MAP_OCRAM_MASK);
-    LogVerbose("%s - start - end (0x%08x - 0x%08x)\n", NAME_OF_UTILITY, loadaddr & ~MAP_OCRAM_MASK, (loadaddr & ~MAP_OCRAM_MASK) + MAP_OCRAM_SIZE);
-    virt_addr = (unsigned char*)(map_base + (loadaddr & MAP_OCRAM_MASK));
-    memcpy(virt_addr, filebuffer, size);
+    map_base = mmap(0, MAP_OCRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(loadaddr & (long unsigned)~MAP_OCRAM_MASK));
+    LogVerbose("%s - start - end (0x%08lx - 0x%08lx)\n", NAME_OF_UTILITY, loadaddr & (long unsigned)~MAP_OCRAM_MASK, (loadaddr & (long unsigned)~MAP_OCRAM_MASK) + MAP_OCRAM_SIZE);
+    virt_addr = (unsigned char*)map_base + (loadaddr & MAP_OCRAM_MASK);
+    memcpy(virt_addr, filebuffer, (size_t)size);
     munmap(map_base, MAP_OCRAM_SIZE);
 
     LogVerbose("Will set PC and STACK...");
@@ -322,7 +323,7 @@ int get_board_id(void)
 
     while (fgets(out, sizeof(out) - 1, fp) != NULL) {
         if (strstr(out, "Hardware")) {
-            for (i = 0; i < (sizeof(socs) / sizeof(struct soc_specific)); i++) {
+            for (i = 0; (unsigned long)i < (sizeof(socs) / sizeof(struct soc_specific)); i++) {
                 if (strstr(out, socs[i].detect_name)) {
                     result = i;
                     break;
@@ -338,13 +339,14 @@ int get_board_id(void)
 
 int main(int argc, char** argv)
 {
-    int fd, n;
+    int fd;
+    //int n;
     unsigned long loadaddr;
     char* p;
-    char m4IsStopped = 0;
-    char m4IsRunning = 0;
-    int m4TraceFlags = 0;
-    int m4Retry;
+    //char m4IsStopped = 0;
+    //char m4IsRunning = 0;
+    //int m4TraceFlags = 0;
+    //int m4Retry;
     char* filepath = argv[1];
     int currentSoC = -1;
 
@@ -355,7 +357,7 @@ int main(int argc, char** argv)
                  "or: %s stop                    # holds the auxiliary core in reset\n"
                  "or: %s start                   # releases the auxiliary core from reset\n"
                  "or: %s kick [n]                # triggers interrupt on RPMsg virtqueue n\n",
-            NAME_OF_UTILITY, argv[0], argv[0], argv[0], argv[0], argv[0]);
+            NAME_OF_UTILITY, argv[0], argv[0], argv[0], argv[0]);
         return RETURN_CODE_ARGUMENTS_ERROR;
     }
 
@@ -417,13 +419,13 @@ int main(int argc, char** argv)
         }
     }
 
-    LogVerbose("LoadAddr is: %X\n", loadaddr);
+    LogVerbose("LoadAddr is: %lX\n", loadaddr);
     LogVerbose("Will stop CPU now...\n");
     stop_cpu(fd, currentSoC);
     LogVerbose("Will ungate M4 clock source...\n");
     ungate_m4_clk(fd, currentSoC);
     LogVerbose("Will load M4 firmware...\n");
-    load_m4_fw(fd, currentSoC, filepath, loadaddr);
+    load_m4_fw(fd, currentSoC, filepath, (unsigned int)loadaddr);
     LogVerbose("Will start CPU now...\n");
     start_cpu(fd, currentSoC);
     LogVerbose("Done!\n");
