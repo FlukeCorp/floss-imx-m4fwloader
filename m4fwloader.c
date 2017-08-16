@@ -73,8 +73,11 @@
 #define SIZE_16BYTE 16UL
 #define MAP_OCRAM_SIZE 64 * 1024
 #define MAP_OCRAM_MASK (MAP_OCRAM_SIZE - 1)
-#define MAX_FILE_SIZE MAP_OCRAM_SIZE
 #define MAX_RETRIES 8
+
+#define M4_DDR_SIZE 0x200000
+#define M4_DDR_MASK (M4_DDR_SIZE - 1)
+#define MAX_FILE_SIZE M4_DDR_SIZE
 
 #define RETURN_CODE_OK 0
 #define RETURN_CODE_ARGUMENTS_ERROR 1
@@ -296,9 +299,9 @@ int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
     }
     LogVerbose("%s - FILENAME = %s; loadaddr = 0x%08x\n", NAME_OF_UTILITY, filepath, loadaddr);
 
-    map_base = mmap(0, MAP_OCRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(loadaddr & (long unsigned)~MAP_OCRAM_MASK));
-    LogVerbose("%s - start - end (0x%08lx - 0x%08lx)\n", NAME_OF_UTILITY, loadaddr & (long unsigned)~MAP_OCRAM_MASK, (loadaddr & (long unsigned)~MAP_OCRAM_MASK) + MAP_OCRAM_SIZE);
-    virt_addr = (unsigned char*)map_base + (loadaddr & MAP_OCRAM_MASK);
+    map_base = mmap(0, M4_DDR_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(loadaddr & (long unsigned)~M4_DDR_MASK));
+    LogVerbose("%s - start - end (0x%08lx - 0x%08lx)\n", NAME_OF_UTILITY, loadaddr & (long unsigned)~M4_DDR_MASK, (loadaddr & (long unsigned)~M4_DDR_MASK) + M4_DDR_SIZE);
+    virt_addr = (unsigned char*)map_base + (loadaddr & M4_DDR_MASK);
     memcpy(virt_addr, filebuffer, (size_t)size);
     munmap(map_base, MAP_OCRAM_SIZE);
 
