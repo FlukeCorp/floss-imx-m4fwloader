@@ -75,6 +75,7 @@
 #define MAP_OCRAM_MASK (MAP_OCRAM_SIZE - 1)
 #define MAX_RETRIES 8
 
+#define M4_DDR_ADDR 0x80000000
 #define M4_DDR_SIZE 0x200000
 #define M4_DDR_MASK (M4_DDR_SIZE - 1)
 #define MAX_FILE_SIZE M4_DDR_SIZE
@@ -356,7 +357,7 @@ int main(int argc, char** argv)
     if (argc < 2) {
         LogError(HEADER);
         LogError("-- %s -- \nUsage:\n"
-                 "%s [filename.bin] [0xLOADADDR] [--verbose]  # loads new firmware\n"
+                 "%s [filename.bin] [--verbose]  # loads new firmware\n"
                  "or: %s stop                    # holds the auxiliary core in reset\n"
                  "or: %s start                   # releases the auxiliary core from reset\n"
                  "or: %s kick [n]                # triggers interrupt on RPMsg virtqueue n\n",
@@ -393,14 +394,14 @@ int main(int argc, char** argv)
             LogError("%s - Usage: %s kick {vq_id to kick}\n", NAME_OF_UTILITY, argv[0]);
             return RETURN_CODE_ARGUMENTS_ERROR;
         }
-        rpmsg_mu_kick(fd, currentSoC, strtoul(argv[2], &p, 16));
+        rpmsg_mu_kick(fd, currentSoC, (unsigned int)strtoul(argv[2], &p, 16));
         return RETURN_CODE_OK;
     }
 
     /* FW LOADING */
-    if (argc < 3) {
+    if (argc < 2) {
         LogError(HEADER);
-        LogError("%s - Usage: %s [yourfwname.bin] [0xLOADADDR] [--verbose]\n", NAME_OF_UTILITY, argv[0]);
+        LogError("%s - Usage: %s [yourfwname.bin] [--verbose]\n", NAME_OF_UTILITY, argv[0]);
         return RETURN_CODE_ARGUMENTS_ERROR;
     }
 
@@ -409,15 +410,16 @@ int main(int argc, char** argv)
         return RETURN_CODE_ARGUMENTS_ERROR;
     }
 
-    loadaddr = strtoul(argv[2], &p, 16);
+    //loadaddr = strtoul(argv[2], &p, 16);
+    loadaddr = M4_DDR_ADDR;
 
-    if (argc == 4) {
-        if (!strcmp(argv[3], "--verbose")) {
+    if (argc == 3) {
+        if (!strcmp(argv[2], "--verbose")) {
             verbose = 1;
         }
         else {
             LogError(HEADER);
-            LogError("%s - Usage: %s [yourfwname.bin] [0xLOADADDR] [--verbose]\n", NAME_OF_UTILITY, argv[0]);
+            LogError("%s - Usage: %s [yourfwname.bin] [--verbose]\n", NAME_OF_UTILITY, argv[0]);
             return RETURN_CODE_ARGUMENTS_ERROR;
         }
     }
