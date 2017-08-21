@@ -304,14 +304,64 @@ int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
     LogVerbose("%s - start - end (0x%08lx - 0x%08lx)\n", NAME_OF_UTILITY, loadaddr & (long unsigned)~M4_DDR_MASK, (loadaddr & (long unsigned)~M4_DDR_MASK) + M4_DDR_SIZE);
     virt_addr = (unsigned char*)map_base + (loadaddr & M4_DDR_MASK);
     memcpy(virt_addr, filebuffer, (size_t)size);
-    munmap(map_base, MAP_OCRAM_SIZE);
+    munmap(map_base, M4_DDR_SIZE);
 
     LogVerbose("Will set PC and STACK...");
     set_stack_pc(fd, socid, stack, pc);
     LogVerbose("...Done\n");
+
     free(filebuffer);
 
     return size;
+}
+
+void validate(int fd, char* filepath, unsigned int loadaddr)
+{
+    int n;
+    int good = 1;
+    long size;
+    FILE* fdf;
+    char* filebuffer;
+    char* filebuffer2;
+    void *map_base, *virt_addr;
+
+    fdf = fopen(filepath, "rb");
+    fseek(fdf, 0, SEEK_END);
+    size = ftell(fdf);
+    fseek(fdf, 0, SEEK_SET);
+    if (size > MAX_FILE_SIZE) {
+        LogError("%s - File size too big, can't load: %ld > %d \n", NAME_OF_UTILITY, size, MAX_FILE_SIZE);
+        return;
+    }
+    filebuffer = (char*)malloc((size_t)size + 1);
+    if ((size_t)size != fread(filebuffer, sizeof(char), (size_t)size, fdf)) {
+        free(filebuffer);
+        return;
+    }
+
+    fclose(fdf);
+
+    LogVerbose("%s - FILENAME = %s; loadaddr = 0x%08x\n", NAME_OF_UTILITY, filepath, loadaddr);
+
+    // Read back and validate
+    filebuffer2 = (char*)malloc((size_t)size + 1);
+    map_base = mmap(0, M4_DDR_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(loadaddr & (long unsigned)~M4_DDR_MASK));
+    virt_addr = (unsigned char*)map_base + (loadaddr & M4_DDR_MASK);
+    memcpy(filebuffer2, virt_addr, (size_t)size);
+    munmap(map_base, M4_DDR_SIZE);
+
+    for (n = 0; n < size; n++) {
+        if (filebuffer[n] != filebuffer2[n]) {
+            printf("Readback does not match at 0x%x. File: %x mem: %x\n", loadaddr + (unsigned int)n, filebuffer[n], filebuffer2[n]);
+            good = 0;
+        }
+    }
+    if (good) {
+        printf("File verified\n");
+    }
+
+    free(filebuffer);
+    free(filebuffer2);
 }
 
 int get_board_id(void)
@@ -395,6 +445,21 @@ int main(int argc, char** argv)
             return RETURN_CODE_ARGUMENTS_ERROR;
         }
         rpmsg_mu_kick(fd, currentSoC, (unsigned int)strtoul(argv[2], &p, 16));
+        return RETURN_CODE_OK;
+    }
+    else if (!strcmp(argv[1], "validate")) {
+        if (argc < 3) {
+            LogError(HEADER);
+            LogError("%s - Usage: %s [yourfwname.bin] [--verbose]\n", NAME_OF_UTILITY, argv[0]);
+            return RETURN_CODE_ARGUMENTS_ERROR;
+        }
+        filepath = argv[2];
+        if (access(filepath, F_OK) == -1) {
+            LogError("File %s not found.\n", argv[1]);
+            return RETURN_CODE_ARGUMENTS_ERROR;
+        }
+        loadaddr = M4_DDR_ADDR;
+        validate(fd, filepath, (unsigned int)loadaddr);
         return RETURN_CODE_OK;
     }
 
