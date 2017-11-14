@@ -159,6 +159,9 @@ int load_m4_fw_elf(int fd, int socid, char* filepath)
         return -2;
 
     LogVerbose("Will set PC and STACK...");
+    // on boot, the m4 startup corrects the stack to the right value
+    // additionally, it moves the tcm segement from where the
+    //  elf loads it (ddr) to the actual tcm
     set_stack_pc(fd, socid, stack, pc);
     LogVerbose("...Done\n");
 

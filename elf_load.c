@@ -116,10 +116,13 @@ unsigned long load_elf_image_phdr(int fd, char *addr)
     return ehdr->e_entry;
 }
 
-#define IS_ELF(ehdr) ((ehdr).e_ident[EI_MAG0] == ELFMAG0 && \
-              (ehdr).e_ident[EI_MAG1] == ELFMAG1 && \
-              (ehdr).e_ident[EI_MAG2] == ELFMAG2 && \
-              (ehdr).e_ident[EI_MAG3] == ELFMAG3)
+static int is_elf(Elf32_Ehdr ehdr)
+{
+    return ((ehdr).e_ident[EI_MAG0] == ELFMAG0 &&
+              (ehdr).e_ident[EI_MAG1] == ELFMAG1 &&
+              (ehdr).e_ident[EI_MAG2] == ELFMAG2 &&
+              (ehdr).e_ident[EI_MAG3] == ELFMAG3);
+}
 
 /* Determine if a valid ELF image exists at the given memory location.
  */
@@ -127,7 +130,7 @@ int valid_elf_image(char* addr)
 {
     Elf32_Ehdr *ehdr = (Elf32_Ehdr *) addr;
 
-    if (!IS_ELF(*ehdr)) {
+    if (!is_elf(*ehdr)) {
         LogVerbose("## No elf image at address %p\n", addr);
         return 0;
     }
@@ -139,21 +142,3 @@ int valid_elf_image(char* addr)
 
     return 1;
 }
-
-/*
-int arch_auxiliary_core_up(u32 stack, u32 pc)
-{
-    struct src *src_reg = (struct src *)SRC_BASE_ADDR;
-
-    // Set the stack and pc to M4 bootROM
-    writel(stack, M4_BOOTROM_BASE_ADDR);
-    writel(pc, M4_BOOTROM_BASE_ADDR + 4);
-
-    // Enable M4
-    setbits_le32(&src_reg->m4rcr, 0x00000008);
-    clrbits_le32(&src_reg->m4rcr, 0x00000001u);
-
-    return 0;
-}
-*/
-
