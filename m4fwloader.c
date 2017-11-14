@@ -52,10 +52,10 @@ struct soc_specific socs[] = {
     {
         "i.MX7 Dual",
         IMX7D_SRC_M4RCR,
-        IMX7D_STOP_CLEAR_MASK,
-        IMX7D_STOP_SET_MASK,
         IMX7D_START_CLEAR_MASK,
         IMX7D_START_SET_MASK,
+        IMX7D_STOP_CLEAR_MASK,
+        IMX7D_STOP_SET_MASK,
         IMX7D_MU_ATR1,
 
         imx7d_clk_enable,
@@ -157,15 +157,6 @@ int load_m4_fw_elf(int fd, int socid, char* filepath)
     pc = load_elf_image_phdr(fd, filebuffer);
     if (!pc)
         return -2;
-
-    /*
-    // todo
-    printf("## Starting auxiliary core at 0x%08X ...\n", pc);
-
-    ret = arch_auxiliary_core_up(0, stack, pc);
-    if (ret)
-        return CMD_RET_FAILURE;
-    */
 
     LogVerbose("Will set PC and STACK...");
     set_stack_pc(fd, socid, stack, pc);

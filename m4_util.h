@@ -3,10 +3,10 @@
 #include <stdint.h>
 
 #define IMX7D_SRC_M4RCR          (0x3039000C) /* reset register */
-#define IMX7D_STOP_CLEAR_MASK    (0xFFFFFF00)
-#define IMX7D_STOP_SET_MASK      (0x000000AA)
-#define IMX7D_START_CLEAR_MASK   (0xFFFFFFFF)
-#define IMX7D_START_SET_MASK     (0x00000001)
+#define IMX7D_STOP_CLEAR_MASK    (0xFFFFFFF0)
+#define IMX7D_STOP_SET_MASK      (0x00000000)
+#define IMX7D_START_CLEAR_MASK   (0xFFFFFFF0)
+#define IMX7D_START_SET_MASK     (0x0000000A) // m4 enable + self-clearing sw reset for m4 core
 #define IMX7D_MU_ATR1            (0x30AA0004) /* rpmsg_mu_kick_addr */
 #define IMX7D_M4_BOOTROM         (0x00180000) 
 #define IMX7D_CCM_ANALOG_PLL_480 (0x303600B0)
