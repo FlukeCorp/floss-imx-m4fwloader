@@ -79,16 +79,16 @@ void start_cpu(int fd, int socid)
     regshow(socs[socid].src_m4reg_addr, "START -after", fd);
 }
 
-void set_stack_pc(int fd, int socid, unsigned int stack, unsigned int pc)
+void set_stack_pc(int fd, int socid, uint32_t stack, uint32_t pc)
 {
     long unsigned target = socs[socid].stack_pc_addr;
     //unsigned long read_result;
     void *map_base, *virt_addr;
     map_base = mmap(0, SIZE_16BYTE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(target & ~MAP_MASK));
     virt_addr = (unsigned char*)map_base + (target & MAP_MASK);
-    *((unsigned long*)virt_addr) = stack;
+    *((uint32_t*)virt_addr) = stack;
     virt_addr = (unsigned char*)map_base + ((target + 0x4) & MAP_MASK);
-    *((unsigned long*)virt_addr) = pc;
+    *((uint32_t*)virt_addr) = pc;
     munmap(map_base, SIZE_16BYTE);
 }
 

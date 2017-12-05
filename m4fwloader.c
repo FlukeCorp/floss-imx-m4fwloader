@@ -82,31 +82,32 @@ struct soc_specific socs[] = {
 int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
 {
     //int n;
-    long size;
+    size_t size;
     FILE* fdf;
     //off_t target;
     char* filebuffer;
     void *map_base, *virt_addr;
-    unsigned long stack, pc;
+    uint32_t stack, pc;
 
     fdf = fopen(filepath, "rb");
     fseek(fdf, 0, SEEK_END);
-    size = ftell(fdf);
+    //Okay to cast, since m4app files better be less than 4GB
+    size = (size_t)ftell(fdf);
     fseek(fdf, 0, SEEK_SET);
     if (size > MAX_FILE_SIZE) {
         LogError("%s - File size too big, can't load: %ld > %d \n", NAME_OF_UTILITY, size, MAX_FILE_SIZE);
         return -2;
     }
-    filebuffer = (char*)malloc((size_t)size + 1);
-    if ((size_t)size != fread(filebuffer, sizeof(char), (size_t)size, fdf)) {
+    filebuffer = (char*)malloc(size + 1);
+    if (size != fread(filebuffer, sizeof(char), size, fdf)) {
         free(filebuffer);
         return -2;
     }
 
     fclose(fdf);
 
-    stack = (long unsigned)(filebuffer[0] | (filebuffer[1] << 8) | (filebuffer[2] << 16) | (filebuffer[3] << 24));
-    pc = (long unsigned)(filebuffer[4] | (filebuffer[5] << 8) | (filebuffer[6] << 16) | (filebuffer[7] << 24));
+    stack = (uint32_t)(filebuffer[0] | (filebuffer[1] << 8) | (filebuffer[2] << 16) | (filebuffer[3] << 24));
+    pc = (uint32_t)(filebuffer[4] | (filebuffer[5] << 8) | (filebuffer[6] << 16) | (filebuffer[7] << 24));
 
     if (loadaddr == 0x0) {
         loadaddr = pc & 0xFFFF0000; /* Align */
@@ -116,7 +117,7 @@ int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
     map_base = mmap(0, M4_DDR_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)(loadaddr & (long unsigned)~M4_DDR_MASK));
     LogVerbose("%s - start - end (0x%08lx - 0x%08lx)\n", NAME_OF_UTILITY, loadaddr & (long unsigned)~M4_DDR_MASK, (loadaddr & (long unsigned)~M4_DDR_MASK) + M4_DDR_SIZE);
     virt_addr = (unsigned char*)map_base + (loadaddr & M4_DDR_MASK);
-    memcpy(virt_addr, filebuffer, (size_t)size);
+    memcpy(virt_addr, filebuffer, size);
     munmap(map_base, M4_DDR_SIZE);
 
     LogVerbose("Will set PC and STACK...");
@@ -125,23 +126,24 @@ int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
 
     free(filebuffer);
 
-    return size;
+    return (int)size;
 }
 
 // loads elf-format m4 firmwares
 int load_m4_fw_elf(int fd, int socid, char* filepath)
 {
-    long size;
+    size_t size;
     FILE* fdf;
     char* filebuffer;
-    unsigned long stack, pc;
+    uint32_t stack, pc;
 
     fdf = fopen(filepath, "rb");
     fseek(fdf, 0, SEEK_END);
-    size = ftell(fdf);
+    //Okay to cast, since m4app files better be less than 4GB
+    size = (size_t)ftell(fdf);
     fseek(fdf, 0, SEEK_SET);
-    filebuffer = (char*)malloc((size_t)size + 1);
-    if ((size_t)size != fread(filebuffer, sizeof(char), (size_t)size, fdf)) {
+    filebuffer = (char*)malloc(size + 1);
+    if (size != fread(filebuffer, sizeof(char), size, fdf)) {
         free(filebuffer);
         return -2;
     }
@@ -160,14 +162,14 @@ int load_m4_fw_elf(int fd, int socid, char* filepath)
 
     LogVerbose("Will set PC and STACK...");
     // on boot, the m4 startup corrects the stack to the right value
-    // additionally, it moves the tcm segement from where the
-    //  elf loads it (ddr) to the actual tcm
+    // additionally, it moves the tcm segment from where the
+    // elf loads it (ddr) to the actual tcm
     set_stack_pc(fd, socid, stack, pc);
     LogVerbose("...Done\n");
 
     free(filebuffer);
 
-    return size;
+    return (int)size;
 }
 
 void validate(int fd, char* filepath, unsigned int loadaddr)
