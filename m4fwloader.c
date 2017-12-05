@@ -95,7 +95,7 @@ int load_m4_fw(int fd, int socid, char* filepath, unsigned int loadaddr)
     size = (size_t)ftell(fdf);
     fseek(fdf, 0, SEEK_SET);
     if (size > MAX_FILE_SIZE) {
-        LogError("%s - File size too big, can't load: %ld > %d \n", NAME_OF_UTILITY, size, MAX_FILE_SIZE);
+        LogError("%s - File size too big, can't load: %zu > %d \n", NAME_OF_UTILITY, size, MAX_FILE_SIZE);
         return -2;
     }
     filebuffer = (char*)malloc(size + 1);
