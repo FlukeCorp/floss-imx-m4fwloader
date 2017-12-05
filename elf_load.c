@@ -59,7 +59,7 @@ static const struct memorymap *get_host_mapping(unsigned long auxcore)
  * A very simple elf loader, assumes the image is valid, returns the
  * entry point address.
  */
-unsigned long load_elf_image_phdr(int fd, char *addr)
+uint32_t load_elf_image_phdr(int fd, char *addr)
 {
     Elf32_Ehdr *ehdr; /* Elf header structure pointer */
     Elf32_Phdr *phdr; /* Program header structure pointer */
