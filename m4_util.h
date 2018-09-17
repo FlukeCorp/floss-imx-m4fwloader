@@ -2,11 +2,19 @@
 
 #include <stdint.h>
 
+#define IMX7D_ENABLE_M4           (0x08u)
+#define IMX7D_SW_M4P_RST          (0x04u)
+#define IMX7D_SW_M4C_RST          (0x02u)
+#define IMX7D_SW_M4C_NON_SCLR_RST (0x01u)
+
+#define IMX7D_M4_RST_MASK        (IMX7D_ENABLE_M4 | IMX7D_SW_M4P_RST | \
+                                  IMX7D_SW_M4C_RST | IMX7D_SW_M4C_NON_SCLR_RST)
+
 #define IMX7D_SRC_M4RCR          (0x3039000C) /* reset register */
-#define IMX7D_STOP_CLEAR_MASK    (0xFFFFFFF0)
-#define IMX7D_STOP_SET_MASK      (0x00000000)
-#define IMX7D_START_CLEAR_MASK   (0xFFFFFFF0)
-#define IMX7D_START_SET_MASK     (0x0000000A) // m4 enable + self-clearing sw reset for m4 core
+#define IMX7D_STOP_CLEAR_MASK    ~(IMX7D_M4_RST_MASK)
+#define IMX7D_STOP_SET_MASK      (IMX7D_ENABLE_M4 | IMX7D_SW_M4C_NON_SCLR_RST)
+#define IMX7D_START_CLEAR_MASK   ~(IMX7D_M4_RST_MASK)
+#define IMX7D_START_SET_MASK     (IMX7D_ENABLE_M4 | IMX7D_SW_M4C_RST)
 #define IMX7D_MU_ATR1            (0x30AA0004) /* rpmsg_mu_kick_addr */
 #define IMX7D_M4_BOOTROM         (0x00180000) 
 #define IMX7D_CCM_ANALOG_PLL_480 (0x303600B0)
