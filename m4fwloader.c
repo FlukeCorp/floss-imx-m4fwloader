@@ -6,7 +6,7 @@
  * 
  * Copyright (C) 2015-2016 Giuseppe Pagano <giuseppe.pagano@seco.com>
  * Copyright 2017 NXP
- * Copyright 2017 Fluke
+ * Copyright 2021 Fluke
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
